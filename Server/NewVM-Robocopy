@@ -56,8 +56,8 @@ $vhdStoragePath = Read-Host "Enter storage path for new VHDX"
 $vmSwitch = Read-Host "Enter name of the virtual switch"
 
 # Convert memory and disk size to bytes
-$vmMemory = [int]$vmMemory * 1GB
-$vmDiskSize = [int]$vmDiskSize * 1GB
+$vmMemory = [int64]$vmMemory * 1GB
+$vmDiskSize = [int64]$vmDiskSize * 1GB
 
 # Call the function to create the VM
 New-HyperVVM -VMName $vmName -VMCPU $vmCpu -VMMemory $vmMemory -VMDiskSize $vmDiskSize -VHDTemplatePath $vhdTemplatePath -VHDStoragePath $vhdStoragePath -VMSwitch $vmSwitch
