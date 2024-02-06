@@ -1,12 +1,18 @@
+<!--
+To use this script in production, update the default values in the param block to reflect your environment.
+Enter a plain single or double digit number for the memory value. (For 8192/8GB enter "8")
+Once all input values have been added, depending on the size of the template disk and the speed of the host storage array,
+the script will hang during the copy operation.
+-->
 function New-HyperVVM {
     param (
-        [string]$VMName,
-        [int]$VMCPU,
-        [int]$VMMemory,
-        [int]$VMDiskSize,
-        [string]$VHDTemplatePath,
-        [string]$VHDStoragePath,
-        [string]$VMSwitch
+        [string]$VMName = "NewVM",
+        [int]$VMCPU = 2,
+        [int64]$VMMemory = 4GB,
+        [int64]$VMDiskSize = 80GB,
+        [string]$VHDTemplatePath = "D:\HyperV\Templates\DefaultTemplate.vhdx",
+        [string]$VHDStoragePath = "D:\HyperV\VMs",
+        [string]$VMSwitch = "Default Switch"
     )
 
     try {
@@ -40,19 +46,28 @@ function New-HyperVVM {
     }
 }
 
-# Interactive input
-Write-Host "Please provide the necessary information to create a new VM."
-$vmName = Read-Host "Enter VM Name"
-$vmCpu = Read-Host "Enter number of CPU cores"
-$vmMemory = Read-Host "Enter memory size (in GB)"
-$vmDiskSize = Read-Host "Enter disk size (in GB)"
-$vhdTemplatePath = Read-Host "Enter path of the sysprepped VHDX template"
-$vhdStoragePath = Read-Host "Enter storage path for new VHDX"
-$vmSwitch = Read-Host "Enter name of the virtual switch"
+# Interactive input with default values
+Write-Host "Please provide the necessary information to create a new VM. Press Enter to accept default values."
+$vmName = Read-Host "Enter VM Name (Default: DefaultVM)"
+if (-not $vmName) { $vmName = "DefaultVM" }
 
-# Convert memory and disk size to bytes
-$vmMemory = [int]$vmMemory * 1GB
-$vmDiskSize = [int]$vmDiskSize * 1GB
+$vmCpu = Read-Host "Enter number of CPU cores (Default: 2)"
+if (-not $vmCpu) { $vmCpu = 2 }
+
+$vmMemoryInput = Read-Host "Enter memory size in GB (Default: 4)"
+$vmMemory = if ($vmMemoryInput) { [int64]$vmMemoryInput * 1GB } else { 4GB }
+
+$vmDiskSizeInput = Read-Host "Enter disk size in GB (Default: 40)"
+$vmDiskSize = if ($vmDiskSizeInput) { [int64]$vmDiskSizeInput * 1GB } else { 40GB }
+
+$vhdTemplatePath = Read-Host "Enter path of the sysprepped VHDX template (Example: C:\HyperV\Templates\DefaultTemplate.vhdx)"
+if (-not $vhdTemplatePath) { $vhdTemplatePath = "C:\HyperV\Templates\DefaultTemplate.vhdx" }
+
+$vhdStoragePath = Read-Host "Enter storage path for new VHDX (Example: C:\HyperV\VMs)"
+if (-not $vhdStoragePath) { $vhdStoragePath = "C:\HyperV\VMs" }
+
+$vmSwitch = Read-Host "Enter name of the virtual switch (Default: Default Switch)"
+if (-not $vmSwitch) { $vmSwitch = "Default Switch" }
 
 # Call the function to create the VM
 New-HyperVVM -VMName $vmName -VMCPU $vmCpu -VMMemory $vmMemory -VMDiskSize $vmDiskSize -VHDTemplatePath $vhdTemplatePath -VHDStoragePath $vhdStoragePath -VMSwitch $vmSwitch
