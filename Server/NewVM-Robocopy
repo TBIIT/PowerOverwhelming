@@ -1,0 +1,63 @@
+function New-HyperVVM {
+    param (
+        [string]$VMName,
+        [int]$VMCPU,
+        [int]$VMMemory,
+        [int]$VMDiskSize,
+        [string]$VHDTemplatePath,
+        [string]$VHDStoragePath,
+        [string]$VMSwitch
+    )
+
+    try {
+        Write-Host "Checking VHDX template..."
+        if (-not (Test-Path $VHDTemplatePath)) {
+            throw "VHDX template not found at path: $VHDTemplatePath"
+        }
+        Write-Host "VHDX template found."
+
+        Write-Host "Copying and renaming the VHDX file..."
+        $VHDPath = Join-Path $VHDStoragePath "$VMName.vhdx"
+        $robocopyResult = robocopy $(Split-Path -Parent $VHDTemplatePath) $VHDStoragePath $(Split-Path -Leaf $VHDTemplatePath) /NFL /NDL /NJH /NJS /nc /ns /np
+        if ($robocopyResult -match "0x[01]") {
+            Rename-Item -Path (Join-Path $VHDStoragePath $(Split-Path -Leaf $VHDTemplatePath)) -NewName $(Split-Path -Leaf $VHDPath)
+            Write-Host "VHDX file copied and renamed."
+        } else {
+            throw "Error in copying VHDX file"
+        }
+
+        Write-Host "Creating the new VM..."
+        $vm = New-VM -Name $VMName -MemoryStartupBytes $VMMemory -Generation 2 -SwitchName $VMSwitch -ErrorAction Stop
+        Write-Host "VM '$VMName' created."
+
+        Write-Host "Configuring VM processor and memory..."
+        Set-VMProcessor -VM $vm -Count $VMCPU -ErrorAction Stop
+        Write-Host "Processor set to $VMCPU cores."
+
+        Write-Host "Adding VHDX to VM..."
+        Add-VMHardDiskDrive -VM $vm -Path $VHDPath -ErrorAction Stop
+        Write-Host "VHDX added to VM."
+
+        Write-Host "VM $VMName created and configured successfully."
+    }
+    catch {
+        Write-Host "An error occurred: $_"
+    }
+}
+
+# Interactive input
+Write-Host "Please provide the necessary information to create a new VM."
+$vmName = Read-Host "Enter VM Name"
+$vmCpu = Read-Host "Enter number of CPU cores"
+$vmMemory = Read-Host "Enter memory size (in GB)"
+$vmDiskSize = Read-Host "Enter disk size (in GB)"
+$vhdTemplatePath = Read-Host "Enter path of the sysprepped VHDX template"
+$vhdStoragePath = Read-Host "Enter storage path for new VHDX"
+$vmSwitch = Read-Host "Enter name of the virtual switch"
+
+# Convert memory and disk size to bytes
+$vmMemory = [int]$vmMemory * 1GB
+$vmDiskSize = [int]$vmDiskSize * 1GB
+
+# Call the function to create the VM
+New-HyperVVM -VMName $vmName -VMCPU $vmCpu -VMMemory $vmMemory -VMDiskSize $vmDiskSize -VHDTemplatePath $vhdTemplatePath -VHDStoragePath $vhdStoragePath -VMSwitch $vmSwitch
